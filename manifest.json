@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Copy PR Link (Rich Text)",
+  "version": "1.2.0",
+  "description": "Press Cmd+K (Mac) / Ctrl+K (Windows, Linux) on a GitHub PR page to copy its title and URL as a rich-text hyperlink, ready to paste into Slack without an unfurl preview.",
+  "permissions": ["storage"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "options.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
