@@ -134,11 +134,20 @@ async function copyRichText(html, text) {
       "text/plain": new Blob([text], { type: "text/plain" }),
     });
     await navigator.clipboard.write([item]);
-    showToast(true);
+    notifyCopied(html, text);
   } catch (err) {
     console.error("Copy PR Link: clipboard write failed", err);
     showToast(false);
   }
+}
+
+// Ask the background worker to confirm the copy by opening the action popup
+// next to the toolbar. If it can't (openPopup needs Chrome 127+), fall back
+// to the in-page toast.
+function notifyCopied(html, text) {
+  chrome.runtime.sendMessage({ type: "copied", payload: { html, text } }, (response) => {
+    if (chrome.runtime.lastError || !response?.popupShown) showToast(true);
+  });
 }
 
 function showToast(success) {
