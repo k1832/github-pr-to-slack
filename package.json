@@ -1,0 +1,12 @@
+{
+  "name": "github-pr-to-slack",
+  "private": true,
+  "version": "1.4.0",
+  "description": "Tests for the Copy PR Link Chrome extension",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}
