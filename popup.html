@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0; padding: 14px 16px; width: 260px;
+      color: #1f2328; background: #fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { color: #e6edf3; background: #24292f; }
+    }
+    .row { display: flex; align-items: center; gap: 8px; }
+    .check {
+      flex: none; width: 18px; height: 18px; border-radius: 50%;
+      background: #1a7f37; color: #fff; font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .title { font-weight: 600; }
+    .detail {
+      margin: 8px 0 0; color: #656d76; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    @media (prefers-color-scheme: dark) { .detail { color: #8d96a0; } }
+    .idle { color: #656d76; }
+    .option { margin-top: 10px; padding-top: 10px; border-top: 1px solid #d0d7de; }
+    @media (prefers-color-scheme: dark) { .option { border-top-color: #444c56; } }
+    .option label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .option input { margin: 0; }
+    .note { color: #656d76; font-size: 11px; margin: 4px 0 0 20px; }
+  </style>
+</head>
+<body>
+  <div id="copied" class="row" hidden>
+    <span class="check">✓</span><span class="title">URL copied!</span>
+  </div>
+  <p id="detail" class="detail" hidden></p>
+  <p id="idle" class="idle" hidden>Press the shortcut (default ⌘K / Ctrl+K) on a GitHub PR page to copy its link.</p>
+  <div class="option">
+    <label><input type="checkbox" id="diffstat-toggle">Include diff stats <span id="stat-preview"></span></label>
+    <p id="stat-note" class="note" hidden>No diff stats found on this page.</p>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
