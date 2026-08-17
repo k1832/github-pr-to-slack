@@ -16,5 +16,6 @@ To change the shortcut, open the extension's options: right-click the extension 
 
 ## Notes
 
+- The paste looks like Title #1234 `(+81, -82)`, with the line counts as inline code outside the link. They're read off the page, so they're omitted if GitHub isn't showing a diffstat (e.g. a very narrow window).
 - On PR pages the shortcut overrides GitHub's own Cmd+K command palette (by design). It stays untouched while you're typing in a comment box or any other text field, so Cmd+K still inserts a markdown link there.
 - After editing the extension's code, reload it on `chrome://extensions` **and** refresh any open GitHub tabs.

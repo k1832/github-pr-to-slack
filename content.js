@@ -79,10 +79,52 @@ function extractPrInfo() {
   const canonicalPath = window.location.pathname.slice(0, prMatch.index) + prMatch[0];
   const url = `${window.location.origin}${canonicalPath}`;
 
+  // <code> rather than literal backticks, so Slack renders the counts as
+  // inline code in the rich-text paste too.
+  const diffStat = extractDiffStat();
+  const htmlSuffix = diffStat ? ` <code>${escapeHtml(diffStat)}</code>` : "";
+  const textSuffix = diffStat ? ` \`${diffStat}\`` : "";
+
   return {
-    html: `<a href="${escapeHtml(url)}">${escapeHtml(linkText)}</a>`,
-    text: `${linkText}: ${url}`,
+    html: `<a href="${escapeHtml(url)}">${escapeHtml(linkText)}</a>${htmlSuffix}`,
+    text: `${linkText}: ${url}${textSuffix}`,
   };
+}
+
+// "81 additions & 82 deletions" (PR header) or "... with 81 additions and
+// 82 deletions" (Files changed tab).
+const DIFF_STAT_RE = /(\d[\d,]*)\s+additions?\s*(?:&(?:amp;)?|and)\s*(\d[\d,]*)\s+deletions?/i;
+
+const unformat = (n) => n.replace(/,/g, "");
+
+// Returns "(+N, -N)", or "" when the page shows no diffstat (very narrow
+// viewports hide it, and it isn't in the DOM until the header renders).
+function extractDiffStat() {
+  const stat = findDiffStatFromText() || findDiffStatFromCountSpans();
+  return stat ? `(+${stat[0]}, -${stat[1]})` : "";
+}
+
+// GitHub spells the counts out for screen readers: a visually hidden span in
+// the PR header, an aria-label on the classic .diffstat bar.
+function findDiffStatFromText() {
+  for (const el of document.querySelectorAll(".sr-only, .diffstat, [aria-label]")) {
+    const source = el.getAttribute("aria-label") || el.textContent || "";
+    const m = source.match(DIFF_STAT_RE);
+    if (m) return [unformat(m[1]), unformat(m[2])];
+  }
+  return null;
+}
+
+// Fallback: the adjacent green "+81" / red "-82" spans.
+function findDiffStatFromCountSpans() {
+  for (const el of document.querySelectorAll("span")) {
+    const additions = el.textContent.trim().match(/^\+(\d[\d,]*)$/);
+    if (!additions) continue;
+    const sibling = el.nextElementSibling;
+    const deletions = sibling && sibling.textContent.trim().match(/^[-\u2212](\d[\d,]*)$/);
+    if (deletions) return [unformat(additions[1]), unformat(deletions[1])];
+  }
+  return null;
 }
 
 async function copyRichText(html, text) {
