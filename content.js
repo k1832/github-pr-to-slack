@@ -7,13 +7,17 @@ const IS_MAC = /mac/i.test(navigator.userAgentData?.platform || navigator.platfo
 const DEFAULT_SHORTCUT = { code: "KeyK", meta: IS_MAC, ctrl: !IS_MAC, alt: false, shift: false };
 
 let shortcut = DEFAULT_SHORTCUT;
-chrome.storage.sync.get("shortcut", ({ shortcut: stored }) => {
-  if (stored) shortcut = stored;
+// Whether copies include the "(+N, -N)" diffstat. On by default; toggled
+// from the confirmation popup.
+let includeDiffStat = true;
+chrome.storage.sync.get({ shortcut: null, includeDiffStat: true }, (items) => {
+  if (items.shortcut) shortcut = items.shortcut;
+  includeDiffStat = items.includeDiffStat;
 });
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "sync" && changes.shortcut) {
-    shortcut = changes.shortcut.newValue || DEFAULT_SHORTCUT;
-  }
+  if (area !== "sync") return;
+  if (changes.shortcut) shortcut = changes.shortcut.newValue || DEFAULT_SHORTCUT;
+  if (changes.includeDiffStat) includeDiffStat = changes.includeDiffStat.newValue;
 });
 
 // Capture phase so we see the key before GitHub's own handlers (it uses
@@ -41,7 +45,7 @@ function handleKeydown(event) {
 
   event.preventDefault();
   event.stopImmediatePropagation();
-  copyRichText(info.html, info.text);
+  copyRichText(info);
 }
 
 function isEditableTarget(event) {
@@ -85,9 +89,16 @@ function extractPrInfo() {
   const htmlSuffix = diffStat ? ` <code>${escapeHtml(diffStat)}</code>` : "";
   const textSuffix = diffStat ? ` \`${diffStat}\`` : "";
 
+  // Both variants are built so the popup checkbox can rewrite the clipboard
+  // without re-scraping the page.
+  const base = {
+    html: `<a href="${escapeHtml(url)}">${escapeHtml(linkText)}</a>`,
+    text: `${linkText}: ${url}`,
+  };
   return {
-    html: `<a href="${escapeHtml(url)}">${escapeHtml(linkText)}</a>${htmlSuffix}`,
-    text: `${linkText}: ${url}${textSuffix}`,
+    base,
+    withStat: { html: base.html + htmlSuffix, text: base.text + textSuffix },
+    hasStat: Boolean(diffStat),
   };
 }
 
@@ -127,14 +138,15 @@ function findDiffStatFromCountSpans() {
   return null;
 }
 
-async function copyRichText(html, text) {
+async function copyRichText(info) {
+  const { html, text } = includeDiffStat ? info.withStat : info.base;
   try {
     const item = new ClipboardItem({
       "text/html": new Blob([html], { type: "text/html" }),
       "text/plain": new Blob([text], { type: "text/plain" }),
     });
     await navigator.clipboard.write([item]);
-    notifyCopied(html, text);
+    notifyCopied(info);
   } catch (err) {
     console.error("Copy PR Link: clipboard write failed", err);
     showToast(false);
@@ -144,8 +156,8 @@ async function copyRichText(html, text) {
 // Ask the background worker to confirm the copy by opening the action popup
 // next to the toolbar. If it can't (openPopup needs Chrome 127+), fall back
 // to the in-page toast.
-function notifyCopied(html, text) {
-  chrome.runtime.sendMessage({ type: "copied", payload: { html, text } }, (response) => {
+function notifyCopied(info) {
+  chrome.runtime.sendMessage({ type: "copied", payload: info }, (response) => {
     if (chrome.runtime.lastError || !response?.popupShown) showToast(true);
   });
 }
